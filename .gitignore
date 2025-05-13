@@ -1,0 +1,46 @@
+# === Flutter / Dart (steel/) ===
+**/build/
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.melonconfig
+generated_plugin_registrant.dart
+.pub-cache/
+pubspec.lock
+.idea/
+.vscode/
+
+# macOS metadata
+.DS_Store
+
+# Android
+android/.gradle/
+android/local.properties
+android/.idea/
+*.keystore
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/.flutter-plugins
+ios/.flutter-plugins-dependencies
+ios/Flutter/Flutter.framework/
+ios/Flutter/Generated.xcconfig
+Runner.xcworkspace/
+xcuserdata/
+
+# === PHP backend (steel-backend/) ===
+steel-backend/vendor/
+steel-backend/node_modules/
+steel-backend/.env
+steel-backend/.env.*
+steel-backend/.idea/
+steel-backend/.vscode/
+steel-backend/.DS_Store
+steel-backend/*.log
+steel-backend/debug_post.txt
+steel-backend/error.log
+
+# === Workspace ===
+*.code-workspace
