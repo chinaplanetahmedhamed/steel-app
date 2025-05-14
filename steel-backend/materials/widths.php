@@ -8,7 +8,7 @@ include '../includes/sidebar.php';
 // Handle Add Width
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_width'])) {
   $width = (int) $_POST['width_mm'];
-  $stmt = $pdo->prepare("INSERT INTO width_options (width_mm) VALUES (?)");
+  $stmt = $pdo->prepare("INSERT INTO widths (width_mm) VALUES (?)");
   $stmt->execute([$width]);
   header("Location: widths.php?success=added");
   exit;
@@ -17,11 +17,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_width'])) {
 // Handle Toggle Status
 if (isset($_GET['toggle_id'])) {
   $id = (int) $_GET['toggle_id'];
-  $stmt = $pdo->prepare("SELECT status FROM width_options WHERE id = ?");
+  $stmt = $pdo->prepare("SELECT status FROM widths WHERE id = ?");
   $stmt->execute([$id]);
   $currentStatus = $stmt->fetchColumn();
   $newStatus = ($currentStatus === 'active') ? 'inactive' : 'active';
-  $pdo->prepare("UPDATE width_options SET status = ? WHERE id = ?")->execute([$newStatus, $id]);
+  $pdo->prepare("UPDATE widths SET status = ? WHERE id = ?")->execute([$newStatus, $id]);
   header("Location: widths.php?success=status-updated");
   exit;
 }
@@ -29,13 +29,13 @@ if (isset($_GET['toggle_id'])) {
 // Handle Delete
 if (isset($_GET['delete_id'])) {
   $id = (int) $_GET['delete_id'];
-  $pdo->prepare("DELETE FROM width_options WHERE id = ?")->execute([$id]);
+  $pdo->prepare("DELETE FROM widths WHERE id = ?")->execute([$id]);
   header("Location: widths.php?success=deleted");
   exit;
 }
 
 // Fetch All
-$widths = $pdo->query("SELECT * FROM width_options ORDER BY width_mm ASC")->fetchAll();
+$widths = $pdo->query("SELECT * FROM widths ORDER BY width_mm ASC")->fetchAll();
 ?>
 
 <div class="container mt-4">

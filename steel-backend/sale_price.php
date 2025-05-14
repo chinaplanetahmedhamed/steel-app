@@ -4,7 +4,6 @@ require_once 'includes/functions.php';
 include 'includes/header.php';
 include 'includes/navbar.php';
 include 'includes/sidebar.php';
-$widths = $pdo->query("SELECT width_mm FROM width_options WHERE status = 'active' ORDER BY width_mm")->fetchAll();
 
 
 // Load dropdown data
@@ -16,6 +15,7 @@ $materials = $pdo->query("
   ORDER BY m.name
 ")->fetchAll();
 // Fetch thickness, coating, processing, packing, and shipping data
+$widths = $pdo->query("SELECT width_mm FROM widths WHERE status = 'active' ORDER BY width_mm")->fetchAll();
 $thicknesses = $pdo->query("SELECT id, thickness_mm FROM thickness_costs ORDER BY thickness_mm")->fetchAll();
 $coatings = $pdo->query("SELECT id, name FROM coatings")->fetchAll();
 $processing = $pdo->query("SELECT id, name FROM processing_costs")->fetchAll();
