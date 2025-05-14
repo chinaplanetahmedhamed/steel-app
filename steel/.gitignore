@@ -1,0 +1,19 @@
+# Dart/Pub
+.dart_tool/
+.packages
+build/
+
+# Flutter
+.flutter-plugins
+.flutter-plugins-dependencies
+.generated/
+.metadata
+
+# IDEs
+.idea/
+.vscode/
+
+# Mac system files
+.DS_Store
+
+# Anything else?
