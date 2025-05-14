@@ -45,23 +45,16 @@ $width_mm = (float)$inputs['width'];  // passed from frontend (via dropdown or i
 // Calculate area per ton based on width + thickness
 $area_per_ton = 1000000 / ($width_mm * $thickness_mm * 7.85);
 
-
-// Get base zinc cost (per ton) from zinc_costs table
-$stmt = $pdo->prepare("SELECT base_zinc_g, base_zinc_cost FROM zinc_costs WHERE thickness_cost_id = ?");
-$stmt->execute([$inputs['thickness_id']]);
+// Zinc cost logic
+$stmt = $pdo->prepare("SELECT base_zinc_g, extra_10g_cost_per_m2 FROM zinc_costs WHERE material_id = ?");
+$stmt->execute([$inputs['material_id']]);
 $zinc = $stmt->fetch();
-
-// Get extra 10g cost per sqm from extra_zinc_costs table (depends only on material_id)
-$extra_cost_stmt = $pdo->prepare("SELECT extra_10g_cost_per_sqm FROM extra_zinc_costs WHERE material_id = ?");
-$extra_cost_stmt->execute([$inputs['material_id']]);
-$extra_cost_per_sqm = (float)$extra_cost_stmt->fetchColumn();
 
 if (!$zinc) {
     $zinc_cost = 0;
 } else {
-$zinc_step = ceil(($inputs['zinc'] - $zinc['base_zinc_g']) / 10);
-$zinc_step = max(0, $zinc_step);
-$zinc_cost = $zinc['base_zinc_cost'] + ($zinc_step * $extra_cost_per_sqm * $area_per_ton);
+    $extra = max(0, $inputs['zinc'] - $zinc['base_zinc_g']);
+    $zinc_cost = ($extra / 10) * $zinc['extra_10g_cost_per_m2'] * $area_per_ton;
 }
 
 

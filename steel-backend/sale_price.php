@@ -33,6 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 
+
+
 <div class="container mt-4">
   <h2><i class="fas fa-calculator mr-2"></i>Sale Price Calculator (Admin)</h2>
 
@@ -71,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
     <div class="col-md-4">
-      <label>Zinc Layer (g/m²)</label>
+      <label>Zinc Weight (g/m²)</label>
       <input type="number" name="zinc" class="form-control" placeholder="e.g. 60" required>
     </div>
 
