@@ -1,4 +1,3 @@
-
 <?php
 function calculate_price($pdo, $inputs) {
     // Base material
@@ -23,22 +22,16 @@ function getExtraZincCostPerSqm($pdo, $material_id) {
     return $stmt->fetchColumn() ?: 0;
 }
 
-// Get base price from base_materials via materials
-$stmt = $pdo->prepare("
-  SELECT bm.price_per_ton
-  FROM materials m
-  JOIN base_materials bm ON m.base_material_id = bm.id
-  WHERE m.id = ?
-");
-$stmt->execute([$inputs['material_id']]);
-$base_price = (float)$stmt->fetchColumn();
 
-// Get thickness info (thickness in mm + cold rolling)
-$stmt = $pdo->prepare("SELECT cold_rolling_cost, thickness_mm FROM thickness_costs WHERE id = ?");
+// Get thickness info and cold rolling cost
+$stmt = $pdo->prepare("SELECT t.thickness_mm, rc.rolling_cost
+    FROM thicknesses t
+    LEFT JOIN rolling_costs rc ON t.id = rc.thickness_id
+    WHERE t.id = ?");
 $stmt->execute([$inputs['thickness_id']]);
 $thickness = $stmt->fetch();
 
-$cold_rolling = (float)$thickness['cold_rolling_cost'];
+$cold_rolling = (float)$thickness['rolling_cost'];
 $thickness_mm = (float)$thickness['thickness_mm'];
 $width_mm = (float)$inputs['width'];  // passed from frontend (via dropdown or input)
 
@@ -46,15 +39,20 @@ $width_mm = (float)$inputs['width'];  // passed from frontend (via dropdown or i
 $area_per_ton = 1000000 / ($width_mm * $thickness_mm * 7.85);
 
 
-// Get base zinc cost (per ton) from zinc_costs table
-$stmt = $pdo->prepare("SELECT base_zinc_g, base_zinc_cost FROM zinc_costs WHERE thickness_cost_id = ?");
-$stmt->execute([$inputs['thickness_id']]);
+// Get base zinc cost (per ton) from zinc_costs table, joined with thicknesses and filtered by material and thickness
+$stmt = $pdo->prepare("
+    SELECT z.base_zinc_g, z.base_zinc_cost
+    FROM zinc_costs z
+    JOIN thicknesses t ON z.thickness_id = t.id
+    WHERE t.material_id = ? AND z.thickness_id = ?
+");
+$stmt->execute([$inputs['material_id'], $inputs['thickness_id']]);
 $zinc = $stmt->fetch();
 
 // Get extra 10g cost per sqm from extra_zinc_costs table (depends only on material_id)
-$extra_cost_stmt = $pdo->prepare("SELECT extra_10g_cost_per_sqm FROM extra_zinc_costs WHERE material_id = ?");
-$extra_cost_stmt->execute([$inputs['material_id']]);
-$extra_cost_per_sqm = (float)$extra_cost_stmt->fetchColumn();
+$stmt = $pdo->prepare("SELECT extra_10g_cost_per_sqm FROM extra_zinc_costs WHERE material_id = ?");
+$stmt->execute([$inputs['material_id']]);
+$extra_cost_per_sqm = (float)$stmt->fetchColumn();
 
 if (!$zinc) {
     $zinc_cost = 0;
@@ -108,7 +106,10 @@ $zinc_cost = $zinc['base_zinc_cost'] + ($zinc_step * $extra_cost_per_sqm * $area
         : $total_cost * ((float)$inputs['profit_value'] / 100);
 
     $final_rmb = $total_cost + $profit;
-    $final_usd = $final_rmb / 7.25; // static rate for now
+    // Get exchange rate from database
+    $usd_rate = get_exchange_rate($pdo);
+
+    $final_usd = $final_rmb / $usd_rate;
 
     return [
         'base_cost'    => $base_price + $cold_rolling,
@@ -121,5 +122,12 @@ $zinc_cost = $zinc['base_zinc_cost'] + ($zinc_step * $extra_cost_per_sqm * $area
         'profit'       => $profit,
         'final_rmb'    => $final_rmb,
         'final_usd'    => $final_usd,
+        'sqm_per_ton'  => $area_per_ton,
     ];
+}
+
+function get_exchange_rate($pdo, $currency = 'USD', $fallback = 7.25) {
+    $stmt = $pdo->prepare("SELECT rate FROM exchange_rate WHERE currency = ? ORDER BY updated_at DESC LIMIT 1");
+    $stmt->execute([$currency]);
+    return (float)($stmt->fetchColumn() ?: $fallback);
 }

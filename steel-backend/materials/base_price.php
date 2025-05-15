@@ -4,11 +4,19 @@ include '../includes/header.php';
 include '../includes/navbar.php';
 include '../includes/sidebar.php';
 
+if (isset($_GET['delete_id'])) {
+    $id = $_GET['delete_id'];
+    $stmt = $pdo->prepare("DELETE FROM base_materials WHERE id = ?");
+    $stmt->execute([$id]);
+    header("Location: base_price.php?success=deleted");
+    exit;
+}
+
 // Handle add
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_base_price'])) {
     $label = $_POST['label'];
     $price = $_POST['price_per_ton'];
-    $stmt = $pdo->prepare("INSERT INTO base_price (label, price_per_ton, updated_at) VALUES (?, ?, NOW())");
+    $stmt = $pdo->prepare("INSERT INTO base_materials (name, price_per_ton, updated_at) VALUES (?, ?, NOW())");
     $stmt->execute([$label, $price]);
     header("Location: base_price.php?success=added");
     exit;
@@ -18,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_base_price'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_id'])) {
     $id = $_POST['update_id'];
     $price = $_POST['price_per_ton'];
-    $stmt = $pdo->prepare("UPDATE base_price SET price_per_ton = ?, updated_at = NOW() WHERE id = ?");
+    $stmt = $pdo->prepare("UPDATE base_materials SET price_per_ton = ?, updated_at = NOW() WHERE id = ?");
     $stmt->execute([$price, $id]);
     header("Location: base_price.php?success=updated");
     exit;
@@ -27,12 +35,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_id'])) {
 $edit_id = $_GET['edit_id'] ?? null;
 $edit_row = null;
 if ($edit_id) {
-    $stmt = $pdo->prepare("SELECT * FROM base_price WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT * FROM base_materials WHERE id = ?");
     $stmt->execute([$edit_id]);
     $edit_row = $stmt->fetch();
 }
 
-$prices = $pdo->query("SELECT * FROM base_price ORDER BY label ASC")->fetchAll();
+$prices = $pdo->query("SELECT * FROM base_materials ORDER BY name ASC")->fetchAll();
 ?>
 
 <div class="container mt-4">
@@ -64,7 +72,7 @@ $prices = $pdo->query("SELECT * FROM base_price ORDER BY label ASC")->fetchAll()
         <?php if ($edit_row && $edit_row['id'] == $row['id']): ?>
           <!-- Edit Mode -->
           <form method="POST">
-            <td><?= htmlspecialchars($row['label']) ?></td>
+            <td><?= htmlspecialchars($row['name']) ?></td>
             <td>
               <input type="hidden" name="update_id" value="<?= $row['id'] ?>">
               <input type="number" step="0.01" name="price_per_ton" value="<?= $row['price_per_ton'] ?>" class="form-control" required>
@@ -77,11 +85,12 @@ $prices = $pdo->query("SELECT * FROM base_price ORDER BY label ASC")->fetchAll()
           </form>
         <?php else: ?>
           <!-- View Mode -->
-          <td><?= htmlspecialchars($row['label']) ?></td>
+          <td><?= htmlspecialchars($row['name']) ?></td>
           <td>¥<?= number_format($row['price_per_ton'], 2) ?></td>
           <td><?= $row['updated_at'] ?></td>
           <td>
             <a href="?edit_id=<?= $row['id'] ?>" class="btn btn-warning btn-sm">Edit</a>
+            <a href="?delete_id=<?= $row['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?')">Delete</a>
           </td>
         <?php endif; ?>
       </tr>

@@ -105,6 +105,12 @@ $isMaterialsOpen = in_array($currentPage, $materialsPages);
         <p>Shipping / Ports</p>
       </a>
     </li>
+      <li class="nav-item">
+      <a href="<?= BASE_URL ?>exchange_rate.php" class="nav-link <?= $currentPage == 'exchange_rate.php' ? 'active' : '' ?>">
+        <i class="fas fa-USD nav-icon text-navy"></i>
+        <p>exchange rate</p>
+      </a>
+    </li>
   </ul>
 </li>
         <li class="nav-item">

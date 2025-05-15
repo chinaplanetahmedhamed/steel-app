@@ -15,6 +15,14 @@ foreach ($thicknessRows as $row) {
     $thicknessMap[$row['material_id']][] = $row;
 }
 
+$editZinc = null;
+if (isset($_GET['edit_id'])) {
+    $editId = (int) $_GET['edit_id'];
+    $stmt = $pdo->prepare("SELECT * FROM zinc_costs WHERE id = ?");
+    $stmt->execute([$editId]);
+    $editZinc = $stmt->fetch();
+}
+
 // Handle Add
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_zinc'])) {
     $thickness_id = $_POST['thickness_id'];
@@ -57,10 +65,15 @@ $zincList = $pdo->query("
   <h2>Zinc  Settings</h2>
 
   <form method="POST" class="form-inline mb-4">
+      <?php if ($editZinc): ?>
+        <input type="hidden" name="edit_id" value="<?= $editZinc['id'] ?>">
+      <?php endif; ?>
           <select name="material_id" id="materialSelect" class="form-control mr-2" required onchange="updateThicknessDropdown()">
         <option value="">Select Material</option>
         <?php foreach ($materials as $mat): ?>
-          <option value="<?= $mat['id'] ?>"><?= htmlspecialchars($mat['name']) ?></option>
+          <option value="<?= $mat['id'] ?>" <?= isset($editZinc) && $thicknessMap[$mat['id']] && in_array($editZinc['thickness_id'], array_column($thicknessMap[$mat['id']], 'id')) ? 'selected' : '' ?>>
+              <?= htmlspecialchars($mat['name']) ?>
+          </option>
         <?php endforeach; ?>
       </select>
 
@@ -68,8 +81,8 @@ $zincList = $pdo->query("
         <option value="">Select Thickness</option>
       </select>
 
-        <input type="number" name="base_zinc_g" class="form-control mr-2" placeholder="Base Zinc (g/m²)" required>
-      <input type="number" step="0.01" name="base_zinc_cost" class="form-control mr-2" placeholder="Base Zinc cost (RMB/Ton)" required>
+        <input type="number" name="base_zinc_g" class="form-control mr-2" placeholder="Base Zinc (g/m²)" required value="<?= $editZinc['base_zinc_g'] ?? '' ?>">
+      <input type="number" step="0.01" name="base_zinc_cost" class="form-control mr-2" placeholder="Base Zinc cost (RMB/Ton)" required value="<?= $editZinc['base_zinc_cost'] ?? '' ?>">
       <button type="submit" name="add_zinc" class="btn btn-success">Add</button>
   </form>
 
@@ -91,6 +104,7 @@ $zincList = $pdo->query("
           <td><?= $row['base_zinc_g'] ?></td>
           <td><?= $row['base_zinc_cost'] ?></td>
           <td>
+            <a href="zinc.php?edit_id=<?= $row['id'] ?>" class="btn btn-primary btn-sm mr-1">Edit</a>
             <a href="?delete_id=<?= $row['id'] ?>" onclick="return confirm('Delete this zinc setting?')" class="btn btn-danger btn-sm">Delete</a>
           </td>
         </tr>
@@ -100,3 +114,32 @@ $zincList = $pdo->query("
 </div>
 ob_end_flush();
 <?php include '../includes/footer.php'; ?>
+
+<script>
+  const thicknessMap = <?= json_encode($thicknessMap) ?>;
+
+  function updateThicknessDropdown() {
+    const materialSelect = document.getElementById('materialSelect');
+    const thicknessSelect = document.getElementById('thicknessSelect');
+    const materialId = materialSelect.value;
+
+    // Clear current options
+    thicknessSelect.innerHTML = '<option value="">Select Thickness</option>';
+
+    if (thicknessMap[materialId]) {
+      thicknessMap[materialId].forEach(function(thick) {
+        const option = document.createElement('option');
+        option.value = thick.id;
+        option.text = thick.thickness_mm + ' mm';
+        thicknessSelect.appendChild(option);
+      });
+    }
+  }
+  <?php if ($editZinc): ?>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.getElementById('materialSelect').value = <?= json_encode($materials[array_search($editZinc['thickness_id'], array_column($thicknessRows, 'id'))]['material_id']) ?>;
+      updateThicknessDropdown();
+      document.getElementById('thicknessSelect').value = <?= json_encode($editZinc['thickness_id']) ?>;
+    });
+  <?php endif; ?>
+</script>
